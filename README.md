@@ -1,134 +1,136 @@
-# SchoolGate - Manajemen Perizinan Sekolah
+# SchoolGate - School Permission Management System
 
-SchoolGate adalah aplikasi web untuk manajemen perizinan dan poin tata tertib sekolah yang menggunakan Google Apps Script sebagai backend dan Google Sheets sebagai database.
+SchoolGate is a web-based application for managing school permissions and student discipline points. The system helps schools streamline the process of requesting, approving, and tracking student permissions and discipline records.
 
-## Fitur
+## Features
 
-- **Multi-role (Siswa dan Guru)**
-- **Manajemen Perizinan**
-  - Siswa dapat mengajukan permintaan izin
-  - Guru dapat menyetujui atau menolak permintaan izin
-- **Manajemen Poin Tata Tertib**
-  - Guru dapat menambah/mengurangi poin pelanggaran siswa
-  - Siswa dapat melihat riwayat dan total poin mereka
-- **Otentikasi Pengguna**
-  - Login dengan username dan password
-  - Menyimpan sesi login di browser
+### Student Features
+- Submit permission requests with details (reason, date, time, notes)
+- View permission history and status (pending, approved, rejected)
+- View discipline points history and total
 
-## Persiapan
+### Teacher Features
+- Manage permission requests (approve/reject with notes)
+- View and manage student data
+- Add discipline points to students with violation details
+- View comprehensive discipline points history
 
-### 1. Siapkan Google Spreadsheet sebagai Database
+## Tech Stack
 
-1. Buat spreadsheet baru di Google Drive
-2. Buat 3 sheet:
-   - **Users** (untuk data pengguna)
-   - **Permissions** (untuk data permintaan izin)
-   - **DisciplinePoints** (untuk data poin tata tertib)
+### Frontend
+- HTML5, JavaScript (Vanilla)
+- Tailwind CSS for styling (via CDN)
+- Inter font from Google Fonts
+- Lucide Icons for UI elements
 
-#### Format Sheet Users:
-| id | username | password | role | name | class |
-|----|----------|----------|------|------|-------|
-| S001 | john | password123 | student | John Doe | 10-A |
-| T001 | smith | teacher123 | teacher | Mr. Smith | |
+### Backend
+- Google Apps Script (GAS) serving as the API
+- Google Sheets as the database
 
-#### Format Sheet Permissions:
-| id | studentId | reason | date | time | notes | status | teacherId | teacherNotes | timestamp |
-|----|-----------|--------|------|------|-------|--------|-----------|--------------|-----------|
+## Project Structure
 
-#### Format Sheet DisciplinePoints:
-| id | studentId | violation | points | notes | timestamp |
-|----|-----------|-----------|--------|-------|-----------|
+```
+schoolgate/
+│
+├── css/
+│   └── styles.css             # Custom CSS styles
+│
+├── js/
+│   └── auth.js                # Authentication functionality
+│
+├── student/
+│   └── dashboard.html         # Student dashboard
+│
+├── teacher/ 
+│   └── dashboard.html         # Teacher dashboard
+│
+├── index.html                 # Login page
+├── Code.gs                    # Backend Google Apps Script code
+├── CORSrules.txt              # CORS guidelines for Google Apps Script
+└── README.md                  # This file
+```
 
-### 2. Deploy Backend di Google Apps Script
+## Database Structure
 
-1. Buka [Google Apps Script](https://script.google.com/) dan buat project baru
-2. Copy-paste kode dari `Code.gs` ke editor
-3. Update nilai `SS_ID` dengan ID Spreadsheet yang telah dibuat:
-   ```javascript
-   const SS_ID = "GANTI_DENGAN_ID_SPREADSHEET_ANDA"; // Ambil dari URL spreadsheet
-   ```
-4. Simpan project
-5. Klik **Deploy** > **New Deployment**
-6. Pilih tipe: **Web app**
-7. Atur:
-   - Execute as: **Me**
-   - Who has access: **Anyone**
-8. Klik **Deploy**
-9. Salin URL yang diberikan - ini akan menjadi endpoint API Anda
+The system uses Google Sheets as its database with the following sheets:
 
-### 3. Deploy Frontend di GitHub Pages
+1. **Students**
+   - id, username, password, role, name, class
 
-1. Push semua file (kecuali Code.gs) ke repository GitHub:
-   - index.html
-   - main.js
-   - README.md
-   - CORSrules.txt (sebagai referensi)
+2. **Teachers**
+   - id, username, password, role, name, subject
 
-2. Buka file `main.js` dan update URL API dengan URL deployment Google Apps Script:
-   ```javascript
-   const CONFIG = {
-       API_URL: "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec",
-       // ...
-   };
-   ```
+3. **Permissions**
+   - id, studentId, reason, date, time, notes, status, teacherId, teacherNotes, timestamp
 
-3. Aktifkan GitHub Pages:
-   - Buka repository GitHub > Settings > Pages
-   - Pilih branch main dan folder root (/) sebagai source
-   - Klik Save
-   - Tunggu beberapa menit hingga website di-deploy
+4. **DisciplinePoints**
+   - id, studentId, violation, points, notes, timestamp
 
-## Cara Penggunaan
+## Installation and Setup
 
-### Untuk Siswa:
+### Backend Setup (Google Apps Script)
 
-1. Login dengan username dan password siswa
-2. Di tab "Manajemen Perizinan", klik "Ajukan Izin" untuk membuat permintaan izin baru
-3. Isi formulir dengan alasan izin dan tanggal/waktu
-4. Pantau status permintaan izin
-5. Lihat riwayat poin tata tertib di tab "Poin Tata Tertib"
+1. Create a new Google Sheet to serve as your database
+2. Go to Extensions → Apps Script
+3. Copy the content of `Code.gs` into the script editor
+4. Update the `SS_ID` variable with your Google Sheet ID
+5. Deploy as a web app:
+   - Execute as: "Me"
+   - Who has access: "Anyone"
+6. Copy the web app URL and update the `API_URL` in the `auth.js` file
 
-### Untuk Guru:
+### Frontend Setup
 
-1. Login dengan username dan password guru
-2. Di tab "Manajemen Perizinan", lihat semua permintaan izin dari siswa
-3. Klik "Setujui" atau "Tolak" untuk memproses permintaan izin
-4. Di tab "Poin Tata Tertib", tambah/kurangi poin pelanggaran siswa
+#### Local Development
+1. Clone this repository
+2. Update the API URL in `js/auth.js` with your Google Apps Script URL
+3. Open `index.html` in your browser or use a local server
 
-## Catatan Penting tentang CORS
+#### Production Deployment
+1. Upload the files to a web server or hosting service
+2. Ensure the service provides HTTPS as Google Apps Script requires secure connections
 
-Aplikasi ini menggunakan pendekatan khusus untuk menangani masalah CORS dengan Google Apps Script:
+## CORS Handling
 
-1. **Tidak menggunakan header kustom** seperti Content-Type: application/json atau Authorization
-2. **Hanya menggunakan URLSearchParams** (application/x-www-form-urlencoded) untuk body request POST
-3. **Menghindari preflight OPTIONS request** dengan menghindari penggunaan custom headers
-4. Google Apps Script secara otomatis mengizinkan CORS untuk request sederhana
+This application follows specific CORS guidelines for Google Apps Script:
 
-Jika mengalami masalah, pastikan:
-- Tetap menggunakan fetch dengan metode POST
-- Body request menggunakan format URLSearchParams, bukan JSON
-- Tidak ada custom headers ditambahkan ke request
+- Uses URLSearchParams instead of JSON for POST requests
+- Relies on Google's built-in CORS handling
+- See `CORSrules.txt` for detailed guidelines
 
-## Catatan Keamanan
+## Authentication Flow
 
-- Aplikasi ini menggunakan metode otentikasi sederhana (plaintext password di spreadsheet) yang cocok untuk penggunaan internal. Untuk penggunaan yang lebih luas, pertimbangkan untuk mengimplementasikan metode otentikasi yang lebih aman.
-- Pastikan akses spreadsheet terbatas hanya pada admin yang berwenang.
-- Jangan menyimpan informasi sensitif dalam aplikasi ini.
+1. User logs in at `index.html`
+2. Authentication processed by Google Apps Script backend
+3. User session stored in browser's sessionStorage
+4. User redirected to appropriate dashboard based on role
 
-## Troubleshooting
+## Roles and Permissions
 
-**Masalah CORS:**
-- Jika mengalami masalah CORS, pastikan telah mengikuti petunjuk yang ada di `CORSrules.txt`.
-- Buka URL Apps Script di browser dan verifikasi bahwa endpoint berfungsi.
+- **Students**: Can submit permission requests and view their own records
+- **Teachers**: Can manage all permission requests and discipline points
 
-**Masalah Otorisasi:**
-- Jika muncul error otorisasi, coba buka URL Apps Script secara langsung dan berikan izin manual.
-- Pastikan spreadsheet dan Apps Script dijalankan dengan akun Google yang sama.
+## Mobile Responsiveness
 
-## Pengembangan Lebih Lanjut
+The UI is designed to be responsive for various screen sizes:
+- Desktop: Full sidebar navigation
+- Mobile: Optimized layout for smaller screens
 
-- Sistem notifikasi real-time
-- Ekspor data ke PDF/Excel
-- Integrasi dengan sistem sekolah lainnya
-- Penambahan statistik dan laporan
-- Implementasi fitur lupa password 
+## Security Considerations
+
+- Authentication data stored in sessionStorage (cleared on browser close)
+- No sensitive data stored in localStorage
+- Password handling implemented through Google Apps Script
+- HTTPS required for production deployment
+
+## License
+
+This project is available for educational purposes. Please adjust licensing as needed for your specific use case.
+
+## Authors
+
+This project was developed for educational purposes to demonstrate a full-stack web application using Google Apps Script as a backend.
+
+---
+
+For any questions or assistance, please refer to this documentation or contact the project maintainers. 

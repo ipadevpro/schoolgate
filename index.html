@@ -3,282 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SchoolGate - Manajemen Perizinan</title>
+    <title>SchoolGate - Login</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-        
-        /* Animation for notifications */
-        @keyframes slideIn {
-            from { transform: translateX(100%); }
-            to { transform: translateX(0); }
-        }
-        
-        .notification {
-            animation: slideIn 0.3s ease-out;
-        }
-        
-        /* Custom checkbox */
-        .custom-checkbox {
-            appearance: none;
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #e2e8f0;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .custom-checkbox:checked {
-            background-color: #3b82f6;
-            border-color: #3b82f6;
-        }
-        
-        .custom-checkbox:checked::after {
-            content: "✓";
-            color: white;
-            font-size: 12px;
-        }
-        
-        /* Loading spinner */
-        .spinner {
-            width: 24px;
-            height: 24px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-    </style>
+    <!-- Inter font from Google Fonts (used by shadcn) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons (used by shadcn) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- CSS linking with path check -->
+    <script>
+        // Create the correct CSS link based on protocol
+        document.write(`<link rel="stylesheet" href="${window.location.protocol === 'file:' ? 'css/styles.css' : '/css/styles.css'}">`);
+    </script>
 </head>
-<body class="bg-gray-50 font-sans">
-    <!-- Login Screen (visible by default) -->
-    <div id="loginScreen" class="min-h-screen flex items-center justify-center px-4">
-        <div class="max-w-md w-full bg-white rounded-lg shadow-md overflow-hidden">
-            <div class="bg-blue-600 py-6 px-8">
-                <div class="flex items-center justify-center space-x-3">
-                    <div class="bg-white text-blue-600 p-2 rounded-lg">
-                        <i class="fas fa-school text-xl"></i>
-                    </div>
-                    <h1 class="text-2xl font-bold text-white">SchoolGate</h1>
-                </div>
-                <p class="text-blue-100 text-center mt-2">Sistem Manajemen Perizinan Sekolah</p>
+<body class="bg-background min-h-screen">
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center space-x-2">
+                <svg class="animate-spin h-5 w-5 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-gray-700">Loading...</span>
             </div>
-            
-            <div class="py-8 px-8">
-                <form id="loginForm">
-                    <div class="mb-4">
-                        <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-user text-gray-400"></i>
-                            </div>
-                            <input type="text" id="username" name="username" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Masukkan username" required>
-                        </div>
+        </div>
+    </div>
+
+    <!-- Login screen -->
+    <div id="login-screen" class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="card w-full max-w-sm">
+            <div class="card-header">
+                <h2 class="card-title">SchoolGate</h2>
+                <p class="card-description">Masuk untuk mengakses sistem manajemen perizinan sekolah</p>
+            </div>
+            <div class="card-content">
+                <form id="login-form" class="space-y-4">
+                    <div class="space-y-2">
+                        <label for="username" class="text-sm font-medium leading-none">Username</label>
+                        <input id="username" class="input" type="text" required>
                     </div>
-                    
-                    <div class="mb-6">
-                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-lock text-gray-400"></i>
-                            </div>
-                            <input type="password" id="password" name="password" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Masukkan password" required>
-                        </div>
+                    <div class="space-y-2">
+                        <label for="password" class="text-sm font-medium leading-none">Password</label>
+                        <input id="password" class="input" type="password" required>
                     </div>
-                    
-                    <div class="mb-4 flex items-center justify-between">
-                        <div class="flex items-center">
-                            <input id="remember_me" name="remember_me" type="checkbox" class="custom-checkbox">
-                            <label for="remember_me" class="ml-2 block text-sm text-gray-700">
-                                Ingat saya
-                            </label>
-                        </div>
-                        
-                        <div class="text-sm">
-                            <a href="#" class="text-blue-600 hover:text-blue-800">
-                                Lupa password?
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <span id="loginBtnText">Masuk</span>
-                            <span id="loginSpinner" class="spinner ml-2 hidden"></span>
-                        </button>
-                    </div>
+                    <button type="submit" class="btn btn-primary w-full">Masuk</button>
                 </form>
-                
-                <div id="loginErrorMsg" class="hidden mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                    <span class="block sm:inline">Username atau password salah.</span>
-                </div>
             </div>
         </div>
     </div>
 
-    <!-- Main App (hidden by default) -->
-    <div id="appScreen" class="hidden">
-        <!-- Header -->
-        <header class="bg-white shadow-sm sticky top-0 z-10">
-            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-                <div class="flex items-center space-x-2">
-                    <div class="bg-blue-600 text-white p-2 rounded-lg">
-                        <i class="fas fa-school text-xl"></i>
-                    </div>
-                    <h1 class="text-xl font-bold text-gray-800">SchoolGate</h1>
-                </div>
-                
-                <div class="flex items-center space-x-4">
-                    <div class="relative">
-                        <button id="notificationBtn" class="text-gray-600 hover:text-blue-600 relative">
-                            <i class="fas fa-bell text-xl"></i>
-                            <span id="notificationCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
-                        </button>
-                        <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg py-1 z-20 border border-gray-200">
-                            <div class="px-4 py-2 border-b border-gray-100">
-                                <h3 class="font-medium text-gray-800">Notifikasi</h3>
-                            </div>
-                            <div id="notificationsList" class="max-h-60 overflow-y-auto">
-                                <!-- Notifications will be inserted here -->
-                            </div>
-                            <div class="px-4 py-2 border-t border-gray-100 text-center">
-                                <a href="#" class="text-sm text-blue-600 font-medium">Lihat semua notifikasi</a>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="relative">
-                        <button id="profileBtn" class="flex items-center space-x-2 focus:outline-none">
-                            <div id="userInitials" class="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
-                                UN
-                            </div>
-                            <span id="userName" class="hidden md:inline text-gray-700 font-medium">User</span>
-                            <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
-                        </button>
-                        <div id="profileDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 border border-gray-200">
-                            <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Profil</a>
-                            <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Pengaturan</a>
-                            <div class="border-t border-gray-100"></div>
-                            <a href="#" id="logoutBtn" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Keluar</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <div class="container mx-auto px-4 py-6 flex flex-col md:flex-row">
-            <!-- Sidebar -->
-            <aside class="w-full md:w-64 bg-white rounded-lg shadow-sm mb-6 md:mb-0 md:mr-6">
-                <nav>
-                    <div class="px-4 py-5 border-b border-gray-100">
-                        <h2 class="text-lg font-semibold text-gray-800">Navigasi</h2>
-                    </div>
-                    <ul>
-                        <li>
-                            <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 tab-link" data-tab="dashboard">
-                                <i class="fas fa-home mr-3"></i>
-                                <span>Dashboard</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" class="flex items-center px-4 py-3 text-blue-600 bg-blue-50 tab-link" data-tab="permission">
-                                <i class="fas fa-sign-out-alt mr-3"></i>
-                                <span>Manajemen Perizinan</span>
-                            </a>
-                        </li>
-                        <li id="disciplineTabLink" class="hidden">
-                            <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 tab-link" data-tab="discipline">
-                                <i class="fas fa-clipboard-list mr-3"></i>
-                                <span>Poin Tata Tertib</span>
-                            </a>
-                        </li>
-                        <li id="studentsTabLink" class="hidden">
-                            <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600">
-                                <i class="fas fa-users mr-3"></i>
-                                <span>Siswa</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600">
-                                <i class="fas fa-cog mr-3"></i>
-                                <span>Pengaturan</span>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-            </aside>
-
-            <!-- Main Panel -->
-            <main class="flex-1">
-                <!-- Tab content will be managed by JavaScript -->
-                <section id="permissionSection" class="tab-content bg-white rounded-lg shadow-sm p-6 mb-6">
-                    <!-- Content will be loaded dynamically -->
-                </section>
-                
-                <section id="disciplineSection" class="tab-content bg-white rounded-lg shadow-sm p-6 mb-6 hidden">
-                    <!-- Content will be loaded dynamically -->
-                </section>
-                
-                <section id="dashboardSection" class="tab-content bg-white rounded-lg shadow-sm p-6 mb-6 hidden">
-                    <!-- Content will be loaded dynamically -->
-                </section>
-            </main>
-        </div>
-    </div>
-
-    <!-- Notification Toast -->
-    <div id="notificationToast" class="hidden fixed bottom-4 right-4 bg-green-500 text-white px-4 py-3 rounded-md shadow-lg notification">
-        <div class="flex items-center">
-            <div class="mr-3">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <div>
-                <p id="toastTitle" class="font-medium">Sukses!</p>
-                <p id="toastMessage" class="text-sm">Aksi berhasil dilakukan.</p>
-            </div>
-            <button id="closeToastBtn" class="ml-4 text-white hover:text-gray-200">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Modal container (hidden by default) -->
-    <div id="modalContainer" class="hidden fixed inset-0 overflow-y-auto z-30">
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 transition-opacity" aria-hidden="true">
-                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div id="modalContent" class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                <!-- Modal content will be loaded dynamically -->
-            </div>
-        </div>
-    </div>
-
-    <script src="main.js"></script>
+    <!-- JS linking with path check -->
+    <script>
+        // Create the correct script path based on protocol
+        document.write(`<script src="${window.location.protocol === 'file:' ? 'js/auth.js' : '/js/auth.js'}"><\/script>`);
+    </script>
+    <script>
+        // Initialize Lucide icons
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
 </body>
 </html>

@@ -8,13 +8,15 @@ const STUDENT_SHEET = "Students";
 const TEACHER_SHEET = "Teachers";
 const PERMISSION_SHEET = "Permissions";
 const POINT_SHEET = "DisciplinePoints";
+const LATE_SHEET = "LateStudents";
 
 // Struktur header untuk setiap sheet
 const SHEET_HEADERS = {
   [STUDENT_SHEET]: ["id", "username", "password", "role", "name", "class"],
   [TEACHER_SHEET]: ["id", "username", "password", "role", "name", "subject"],
   [PERMISSION_SHEET]: ["id", "studentId", "reason", "date", "time", "notes", "status", "teacherId", "teacherNotes", "timestamp"],
-  [POINT_SHEET]: ["id", "studentId", "violation", "points", "notes", "timestamp"]
+  [POINT_SHEET]: ["id", "studentId", "violation", "points", "notes", "timestamp"],
+  [LATE_SHEET]: ["id", "studentId", "date", "time", "duration", "reason", "recordedBy", "timestamp"]
 };
 
 // Fungsi untuk memeriksa dan membuat sheet jika belum ada
@@ -119,7 +121,59 @@ function doPost(e) {
         return ContentService.createTextOutput(JSON.stringify(
           checkAndCreateSheets()
         )).setMimeType(ContentService.MimeType.JSON);
+      
+      // New CRUD operations for student management
+      case "createStudent":
+        return ContentService.createTextOutput(JSON.stringify(
+          createStudent(e.parameter.username, e.parameter.password, e.parameter.name, e.parameter.class)
+        )).setMimeType(ContentService.MimeType.JSON);
         
+      case "updateStudent":
+        return ContentService.createTextOutput(JSON.stringify(
+          updateStudent(e.parameter.id, e.parameter.username, e.parameter.password, e.parameter.name, e.parameter.class)
+        )).setMimeType(ContentService.MimeType.JSON);
+        
+      case "deleteStudent":
+        return ContentService.createTextOutput(JSON.stringify(
+          deleteStudent(e.parameter.id)
+        )).setMimeType(ContentService.MimeType.JSON);
+        
+      case "getStudentById":
+        return ContentService.createTextOutput(JSON.stringify(
+          getStudentById(e.parameter.id)
+        )).setMimeType(ContentService.MimeType.JSON);
+        
+      // New CRUD operations for late student records
+      case "createLateRecord":
+        return ContentService.createTextOutput(JSON.stringify(
+          createLateRecord(e.parameter.studentId, e.parameter.date, e.parameter.time, e.parameter.duration, e.parameter.reason, e.parameter.teacherId)
+        )).setMimeType(ContentService.MimeType.JSON);
+        
+      case "getLateRecords":
+        return ContentService.createTextOutput(JSON.stringify(
+          getLateRecords(e.parameter.date)
+        )).setMimeType(ContentService.MimeType.JSON);
+        
+      case "getLateRecordById":
+        return ContentService.createTextOutput(JSON.stringify(
+          getLateRecordById(e.parameter.id)
+        )).setMimeType(ContentService.MimeType.JSON);
+        
+      case "updateLateRecord":
+        return ContentService.createTextOutput(JSON.stringify(
+          updateLateRecord(e.parameter.id, e.parameter.studentId, e.parameter.date, e.parameter.time, e.parameter.duration, e.parameter.reason)
+        )).setMimeType(ContentService.MimeType.JSON);
+        
+      case "deleteLateRecord":
+        return ContentService.createTextOutput(JSON.stringify(
+          deleteLateRecord(e.parameter.id)
+        )).setMimeType(ContentService.MimeType.JSON);
+        
+      case "getLateStatistics":
+        return ContentService.createTextOutput(JSON.stringify(
+          getLateStatistics()
+        )).setMimeType(ContentService.MimeType.JSON);
+      
       default:
         return ContentService.createTextOutput(JSON.stringify({
           success: false,
@@ -444,4 +498,394 @@ function getUsers(role) {
   }
   
   return { success: true, users: users };
+}
+
+// Fungsi untuk membuat siswa baru
+function createStudent(username, password, name, studentClass) {
+  if (!username || !password || !name) {
+    return { success: false, message: "Username, password, dan nama diperlukan" };
+  }
+  
+  const ss = SpreadsheetApp.openById(SS_ID);
+  const sheet = ss.getSheetByName(STUDENT_SHEET);
+  const data = sheet.getDataRange().getValues();
+  
+  // Cek apakah username sudah ada
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][1] === username) {
+      return { success: false, message: "Username sudah digunakan" };
+    }
+  }
+  
+  // Generate ID
+  const id = Utilities.getUuid();
+  
+  // Tambahkan ke spreadsheet
+  sheet.appendRow([
+    id,
+    username,
+    password,
+    "student",  // role
+    name,
+    studentClass || ""
+  ]);
+  
+  return { 
+    success: true, 
+    message: "Siswa berhasil ditambahkan",
+    student: {
+      id: id,
+      username: username,
+      role: "student",
+      name: name,
+      class: studentClass || ""
+    }
+  };
+}
+
+// Fungsi untuk mendapatkan data siswa berdasarkan ID
+function getStudentById(id) {
+  if (!id) {
+    return { success: false, message: "ID siswa diperlukan" };
+  }
+  
+  const student = getUserById(id, "student");
+  
+  if (!student) {
+    return { success: false, message: "Siswa tidak ditemukan" };
+  }
+  
+  return { success: true, student: student };
+}
+
+// Fungsi untuk mengupdate data siswa
+function updateStudent(id, username, password, name, studentClass) {
+  if (!id) {
+    return { success: false, message: "ID siswa diperlukan" };
+  }
+  
+  const ss = SpreadsheetApp.openById(SS_ID);
+  const sheet = ss.getSheetByName(STUDENT_SHEET);
+  const data = sheet.getDataRange().getValues();
+  
+  // Cari siswa berdasarkan ID
+  let rowIndex = -1;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === id) {
+      rowIndex = i + 1;
+      break;
+    }
+  }
+  
+  if (rowIndex === -1) {
+    return { success: false, message: "Siswa tidak ditemukan" };
+  }
+  
+  // Jika username berubah, periksa apakah sudah digunakan
+  if (username && username !== data[rowIndex-1][1]) {
+    for (let i = 1; i < data.length; i++) {
+      if (i !== rowIndex-1 && data[i][1] === username) {
+        return { success: false, message: "Username sudah digunakan" };
+      }
+    }
+  }
+  
+  // Update data
+  if (username) sheet.getRange(rowIndex, 2).setValue(username);
+  if (password) sheet.getRange(rowIndex, 3).setValue(password);
+  if (name) sheet.getRange(rowIndex, 5).setValue(name);
+  sheet.getRange(rowIndex, 6).setValue(studentClass || "");
+  
+  return { 
+    success: true, 
+    message: "Data siswa berhasil diperbarui",
+    student: {
+      id: id,
+      username: username || data[rowIndex-1][1],
+      role: "student",
+      name: name || data[rowIndex-1][4],
+      class: studentClass || data[rowIndex-1][5] || ""
+    }
+  };
+}
+
+// Fungsi untuk menghapus siswa
+function deleteStudent(id) {
+  if (!id) {
+    return { success: false, message: "ID siswa diperlukan" };
+  }
+  
+  const ss = SpreadsheetApp.openById(SS_ID);
+  const sheet = ss.getSheetByName(STUDENT_SHEET);
+  const data = sheet.getDataRange().getValues();
+  
+  // Cari siswa berdasarkan ID
+  let rowIndex = -1;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === id) {
+      rowIndex = i + 1;
+      break;
+    }
+  }
+  
+  if (rowIndex === -1) {
+    return { success: false, message: "Siswa tidak ditemukan" };
+  }
+  
+  // Hapus baris siswa
+  sheet.deleteRow(rowIndex);
+  
+  return { success: true, message: "Siswa berhasil dihapus" };
+}
+
+// Fungsi untuk mengelola siswa terlambat
+function createLateRecord(studentId, date, time, duration, reason, teacherId) {
+  if (!studentId || !date || !time || !duration) {
+    return { success: false, message: "Data tidak lengkap" };
+  }
+  
+  const ss = SpreadsheetApp.openById(SS_ID);
+  const sheet = ss.getSheetByName(LATE_SHEET);
+  
+  // Generate ID
+  const id = Utilities.getUuid();
+  const timestamp = new Date();
+  
+  // Tambahkan ke spreadsheet
+  sheet.appendRow([
+    id,
+    studentId,
+    date,
+    time,
+    duration,
+    reason || "",
+    teacherId || "",
+    timestamp
+  ]);
+  
+  return { 
+    success: true, 
+    message: "Keterlambatan siswa berhasil dicatat",
+    lateRecord: {
+      id: id,
+      studentId: studentId,
+      date: date,
+      time: time,
+      duration: duration,
+      reason: reason || "",
+      recordedBy: teacherId || "",
+      timestamp: timestamp
+    }
+  };
+}
+
+function getLateRecords(date) {
+  const ss = SpreadsheetApp.openById(SS_ID);
+  const sheet = ss.getSheetByName(LATE_SHEET);
+  const data = sheet.getDataRange().getValues();
+  
+  const lateRecords = [];
+  
+  // Skip baris header
+  for (let i = 1; i < data.length; i++) {
+    // Filter by date if provided
+    if (date && data[i][2] !== date) {
+      continue;
+    }
+    
+    // Dapatkan info siswa
+    const studentInfo = getUserById(data[i][1], "student");
+    
+    lateRecords.push({
+      id: data[i][0],
+      studentId: data[i][1],
+      studentName: studentInfo ? studentInfo.name : "Unknown",
+      studentClass: studentInfo ? studentInfo.class : "",
+      date: data[i][2],
+      time: data[i][3],
+      duration: data[i][4],
+      reason: data[i][5],
+      recordedBy: data[i][6],
+      timestamp: data[i][7]
+    });
+  }
+  
+  return { success: true, lateRecords: lateRecords };
+}
+
+function getLateRecordById(id) {
+  if (!id) {
+    return { success: false, message: "ID diperlukan" };
+  }
+  
+  const ss = SpreadsheetApp.openById(SS_ID);
+  const sheet = ss.getSheetByName(LATE_SHEET);
+  const data = sheet.getDataRange().getValues();
+  
+  // Skip baris header
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === id) {
+      // Dapatkan info siswa
+      const studentInfo = getUserById(data[i][1], "student");
+      
+      return { 
+        success: true, 
+        lateRecord: {
+          id: data[i][0],
+          studentId: data[i][1],
+          studentName: studentInfo ? studentInfo.name : "Unknown",
+          studentClass: studentInfo ? studentInfo.class : "",
+          date: data[i][2],
+          time: data[i][3],
+          duration: data[i][4],
+          reason: data[i][5],
+          recordedBy: data[i][6],
+          timestamp: data[i][7]
+        }
+      };
+    }
+  }
+  
+  return { success: false, message: "Data keterlambatan tidak ditemukan" };
+}
+
+function updateLateRecord(id, studentId, date, time, duration, reason) {
+  if (!id) {
+    return { success: false, message: "ID diperlukan" };
+  }
+  
+  const ss = SpreadsheetApp.openById(SS_ID);
+  const sheet = ss.getSheetByName(LATE_SHEET);
+  const data = sheet.getDataRange().getValues();
+  
+  // Cari data berdasarkan ID
+  let rowIndex = -1;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === id) {
+      rowIndex = i + 1;
+      break;
+    }
+  }
+  
+  if (rowIndex === -1) {
+    return { success: false, message: "Data keterlambatan tidak ditemukan" };
+  }
+  
+  // Update data
+  if (studentId) sheet.getRange(rowIndex, 2).setValue(studentId);
+  if (date) sheet.getRange(rowIndex, 3).setValue(date);
+  if (time) sheet.getRange(rowIndex, 4).setValue(time);
+  if (duration) sheet.getRange(rowIndex, 5).setValue(duration);
+  sheet.getRange(rowIndex, 6).setValue(reason || "");
+  
+  return { 
+    success: true, 
+    message: "Data keterlambatan berhasil diperbarui"
+  };
+}
+
+function deleteLateRecord(id) {
+  if (!id) {
+    return { success: false, message: "ID diperlukan" };
+  }
+  
+  const ss = SpreadsheetApp.openById(SS_ID);
+  const sheet = ss.getSheetByName(LATE_SHEET);
+  const data = sheet.getDataRange().getValues();
+  
+  // Cari data berdasarkan ID
+  let rowIndex = -1;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === id) {
+      rowIndex = i + 1;
+      break;
+    }
+  }
+  
+  if (rowIndex === -1) {
+    return { success: false, message: "Data keterlambatan tidak ditemukan" };
+  }
+  
+  // Hapus baris
+  sheet.deleteRow(rowIndex);
+  
+  return { success: true, message: "Data keterlambatan berhasil dihapus" };
+}
+
+// Fungsi untuk mendapatkan statistik keterlambatan
+function getLateStatistics() {
+  const ss = SpreadsheetApp.openById(SS_ID);
+  const sheet = ss.getSheetByName(LATE_SHEET);
+  const data = sheet.getDataRange().getValues();
+  
+  if (data.length <= 1) {
+    return { 
+      success: true, 
+      statistics: {
+        totalLate: 0,
+        frequentStudents: [],
+        byDayOfWeek: [0, 0, 0, 0, 0, 0, 0]  // Sun, Mon, Tue, Wed, Thu, Fri, Sat
+      }
+    };
+  }
+  
+  // Hitung jumlah keterlambatan per siswa
+  const studentLateCount = {};
+  const dayOfWeekCount = [0, 0, 0, 0, 0, 0, 0];  // Sun, Mon, Tue, Wed, Thu, Fri, Sat
+  
+  // Skip baris header
+  for (let i = 1; i < data.length; i++) {
+    const studentId = data[i][1];
+    
+    // Count by student
+    if (!studentLateCount[studentId]) {
+      studentLateCount[studentId] = {
+        count: 0,
+        studentId: studentId,
+        studentName: null,
+        studentClass: null
+      };
+    }
+    studentLateCount[studentId].count++;
+    
+    // Count by day of week
+    try {
+      const dateStr = data[i][2];
+      if (dateStr) {
+        // Parse date string (format: YYYY-MM-DD)
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+          const lateDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+          const dayOfWeek = lateDate.getDay();  // 0 = Sunday, 6 = Saturday
+          dayOfWeekCount[dayOfWeek]++;
+        }
+      }
+    } catch (error) {
+      Logger.log("Error parsing date: " + error);
+    }
+  }
+  
+  // Get top 5 most frequently late students
+  const frequentStudents = [];
+  for (const studentId in studentLateCount) {
+    const studentInfo = getUserById(studentId, "student");
+    if (studentInfo) {
+      studentLateCount[studentId].studentName = studentInfo.name;
+      studentLateCount[studentId].studentClass = studentInfo.class;
+      frequentStudents.push(studentLateCount[studentId]);
+    }
+  }
+  
+  // Sort by count (descending) and take top 5
+  frequentStudents.sort((a, b) => b.count - a.count);
+  const top5 = frequentStudents.slice(0, 5);
+  
+  return { 
+    success: true, 
+    statistics: {
+      totalLate: data.length - 1,  // Subtract header row
+      frequentStudents: top5,
+      byDayOfWeek: dayOfWeekCount
+    }
+  };
 } 

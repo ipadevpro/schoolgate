@@ -1,7 +1,7 @@
 // Konfigurasi aplikasi
 const CONFIG = {
     // Ubah URL ini ke URL endpoint Google Apps Script setelah di-deploy
-    API_URL: "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec",
+    API_URL: "https://script.google.com/macros/s/AKfycbyNVOile8sqVVhqJX_dRctxNIWJfSv3CiRbnPNFwBWdS6OPwhVoG5ZDxmCCXWBvt23r/exec",
     ROLES: {
         STUDENT: "student",
         TEACHER: "teacher",
@@ -17,48 +17,74 @@ let APP_STATE = {
     activeTab: "permission"
 };
 
-// Element selectors
+// Element selectors - Updated for new shadcn UI
 const elements = {
     // Login section
-    loginScreen: document.getElementById("loginScreen"),
-    loginForm: document.getElementById("loginForm"),
-    loginBtnText: document.getElementById("loginBtnText"),
-    loginSpinner: document.getElementById("loginSpinner"),
-    loginErrorMsg: document.getElementById("loginErrorMsg"),
+    loginScreen: document.getElementById("login-screen"),
+    loginForm: document.getElementById("login-form"),
     
     // App section
-    appScreen: document.getElementById("appScreen"),
-    userInitials: document.getElementById("userInitials"),
-    userName: document.getElementById("userName"),
-    logoutBtn: document.getElementById("logoutBtn"),
-    notificationBtn: document.getElementById("notificationBtn"),
-    notificationCount: document.getElementById("notificationCount"),
-    notificationDropdown: document.getElementById("notificationDropdown"),
-    notificationsList: document.getElementById("notificationsList"),
-    profileBtn: document.getElementById("profileBtn"),
-    profileDropdown: document.getElementById("profileDropdown"),
+    appScreen: document.getElementById("app"),
+    userInitials: document.getElementById("user-initial"),
+    userName: document.getElementById("user-name"),
+    userRole: document.getElementById("user-role"),
+    logoutBtn: document.getElementById("logout-btn"),
     
-    // Tab links
-    tabLinks: document.querySelectorAll(".tab-link"),
-    disciplineTabLink: document.getElementById("disciplineTabLink"),
-    studentsTabLink: document.getElementById("studentsTabLink"),
+    // Nav links
+    navDashboard: document.getElementById("nav-dashboard"),
+    navPermissions: document.getElementById("nav-permissions"),
+    navDiscipline: document.getElementById("nav-discipline"),
+    navStudents: document.getElementById("nav-students"),
     
-    // Tab content
-    tabContents: document.querySelectorAll(".tab-content"),
-    permissionSection: document.getElementById("permissionSection"),
-    disciplineSection: document.getElementById("disciplineSection"),
-    dashboardSection: document.getElementById("dashboardSection"),
+    // Pages
+    dashboardPage: document.getElementById("dashboard-page"),
+    permissionsPage: document.getElementById("permissions-page"),
+    disciplinePage: document.getElementById("discipline-page"),
+    studentsPage: document.getElementById("students-page"),
+    
+    // Views
+    studentPermissionsView: document.getElementById("student-permissions-view"),
+    teacherPermissionsView: document.getElementById("teacher-permissions-view"),
+    
+    // Tables
+    studentPermissionsTable: document.getElementById("student-permissions-table"),
+    teacherPermissionsTable: document.getElementById("teacher-permissions-table"),
+    
+    // Buttons 
+    addPermissionBtn: document.getElementById("add-permission-btn"),
+    mobileSidebarToggle: document.getElementById("mobile-sidebar-toggle"),
     
     // Modal
-    modalContainer: document.getElementById("modalContainer"),
-    modalContent: document.getElementById("modalContent"),
+    modal: document.getElementById("modal"),
+    modalTitle: document.getElementById("modal-title"),
+    modalContent: document.getElementById("modal-content"),
+    modalClose: document.getElementById("modal-close"),
     
-    // Toast notification
-    notificationToast: document.getElementById("notificationToast"),
-    toastTitle: document.getElementById("toastTitle"),
-    toastMessage: document.getElementById("toastMessage"),
-    closeToastBtn: document.getElementById("closeToastBtn")
+    // Other
+    loadingOverlay: document.getElementById("loading-overlay"),
+    pageTitle: document.getElementById("page-title"),
+    teacherMenu: document.getElementById("teacher-menu"),
+    sidebar: document.getElementById("sidebar")
 };
+
+// Toggle mobile sidebar function - MOVED UP before it's called
+function toggleMobileSidebar() {
+    if (!elements.sidebar) return;
+    
+    elements.sidebar.classList.toggle("open");
+    document.body.classList.toggle("overflow-hidden");
+    
+    // Create/remove overlay
+    let overlay = document.querySelector(".sidebar-overlay");
+    if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.className = "sidebar-overlay";
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", toggleMobileSidebar);
+    }
+    
+    overlay.classList.toggle("open");
+}
 
 // ==============================================
 // INITIALIZATION AND EVENT LISTENERS
@@ -71,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Check if user is already logged in
     checkLoginStatus();
     
-    // Set up event listeners
+    // Set up event listeners - only if elements exist
     setupEventListeners();
 });
 
@@ -97,45 +123,49 @@ async function verifyApiConnection() {
 }
 
 function setupEventListeners() {
+    // Only add event listeners if elements exist
+    
     // Login form submission
-    elements.loginForm.addEventListener("submit", handleLogin);
+    if (elements.loginForm) {
+        elements.loginForm.addEventListener("submit", handleLogin);
+    }
     
     // Logout button
-    elements.logoutBtn.addEventListener("click", handleLogout);
+    if (elements.logoutBtn) {
+        elements.logoutBtn.addEventListener("click", handleLogout);
+    }
     
-    // Tab switching
-    elements.tabLinks.forEach(link => {
-        link.addEventListener("click", (e) => {
-            e.preventDefault();
-            switchTab(link.getAttribute("data-tab"));
-        });
-    });
+    // Navigation
+    if (elements.navDashboard) {
+        elements.navDashboard.addEventListener("click", () => switchTab("dashboard"));
+    }
     
-    // Toggle dropdowns
-    elements.notificationBtn.addEventListener("click", () => {
-        elements.notificationDropdown.classList.toggle("hidden");
-        elements.profileDropdown.classList.add("hidden");
-    });
+    if (elements.navPermissions) {
+        elements.navPermissions.addEventListener("click", () => switchTab("permission"));
+    }
     
-    elements.profileBtn.addEventListener("click", () => {
-        elements.profileDropdown.classList.toggle("hidden");
-        elements.notificationDropdown.classList.add("hidden");
-    });
+    if (elements.navDiscipline) {
+        elements.navDiscipline.addEventListener("click", () => switchTab("discipline"));
+    }
     
-    // Close dropdowns when clicking outside
-    document.addEventListener("click", (e) => {
-        if (!elements.notificationBtn.contains(e.target) && !elements.notificationDropdown.contains(e.target)) {
-            elements.notificationDropdown.classList.add("hidden");
-        }
-        if (!elements.profileBtn.contains(e.target) && !elements.profileDropdown.contains(e.target)) {
-            elements.profileDropdown.classList.add("hidden");
-        }
-    });
+    if (elements.navStudents) {
+        elements.navStudents.addEventListener("click", () => switchTab("students"));
+    }
     
-    // Close toast
-    elements.closeToastBtn.addEventListener("click", () => {
-        elements.notificationToast.classList.add("hidden");
-    });
+    // Mobile sidebar toggle
+    if (elements.mobileSidebarToggle) {
+        elements.mobileSidebarToggle.addEventListener("click", toggleMobileSidebar);
+    }
+    
+    // Modal close
+    if (elements.modalClose) {
+        elements.modalClose.addEventListener("click", closeModal);
+    }
+    
+    // Add permission button
+    if (elements.addPermissionBtn) {
+        elements.addPermissionBtn.addEventListener("click", showNewPermissionModal);
+    }
 }
 
 // ==============================================
@@ -143,14 +173,16 @@ function setupEventListeners() {
 // ==============================================
 
 function checkLoginStatus() {
-    const savedUser = localStorage.getItem("schoolgate_user");
+    const savedUser = sessionStorage.getItem("schoolgate_user");
+    
     if (savedUser) {
         try {
             const user = JSON.parse(savedUser);
+            APP_STATE.user = user;
             login(user);
         } catch (error) {
             console.error("Error parsing saved user:", error);
-            localStorage.removeItem("schoolgate_user");
+            sessionStorage.removeItem("schoolgate_user");
         }
     }
 }
@@ -158,56 +190,55 @@ function checkLoginStatus() {
 async function handleLogin(e) {
     e.preventDefault();
     
-    // Get form values
-    const username = elements.loginForm.username.value.trim();
-    const password = elements.loginForm.password.value.trim();
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
     
     if (!username || !password) {
-        showError("Username dan password diperlukan");
+        showToast("Error", "Username dan password diperlukan", "error");
         return;
     }
     
-    // Show loading state
-    setLoginLoadingState(true);
+    showLoading();
     
     try {
-        // Call the API
         const response = await apiCall("login", { username, password });
         
         if (response.success) {
-            // Save user to localStorage if remember me is checked
-            if (elements.loginForm.remember_me.checked) {
-                localStorage.setItem("schoolgate_user", JSON.stringify(response.user));
-            }
+            // Save to session
+            const user = response.user;
+            sessionStorage.setItem("schoolgate_user", JSON.stringify(user));
+            APP_STATE.user = user;
             
-            // Login the user
-            login(response.user);
+            login(user);
         } else {
-            showError(response.message || "Login gagal, silakan coba lagi.");
+            showToast("Error", response.message || "Username atau password salah", "error");
         }
     } catch (error) {
         console.error("Login error:", error);
-        showError("Terjadi kesalahan saat login. Silakan coba lagi.");
+        showToast("Error", "Terjadi kesalahan saat login", "error");
     } finally {
-        setLoginLoadingState(false);
+        hideLoading();
     }
 }
 
 function login(user) {
-    // Set user in application state
-    APP_STATE.user = user;
-    
-    // Update UI elements
+    // Update UI
     elements.userInitials.textContent = getInitials(user.name);
     elements.userName.textContent = user.name;
+    elements.userRole.textContent = user.role === CONFIG.ROLES.TEACHER ? "Guru" : "Siswa";
     
-    // Show/hide elements based on user role
+    // Show/hide elements based on role
     if (user.role === CONFIG.ROLES.TEACHER || user.role === CONFIG.ROLES.ADMIN) {
-        elements.disciplineTabLink.classList.remove("hidden");
-        elements.studentsTabLink.classList.remove("hidden");
+        if (elements.teacherMenu) elements.teacherMenu.classList.remove("hidden");
+        if (elements.studentPermissionsView) elements.studentPermissionsView.classList.add("hidden");
+        if (elements.teacherPermissionsView) elements.teacherPermissionsView.classList.remove("hidden");
+    } else {
+        if (elements.teacherMenu) elements.teacherMenu.classList.add("hidden");
+        if (elements.studentPermissionsView) elements.studentPermissionsView.classList.remove("hidden");
+        if (elements.teacherPermissionsView) elements.teacherPermissionsView.classList.add("hidden");
     }
     
-    // Hide login screen, show app
+    // Show app, hide login
     elements.loginScreen.classList.add("hidden");
     elements.appScreen.classList.remove("hidden");
     
@@ -216,26 +247,20 @@ function login(user) {
 }
 
 function handleLogout(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     
-    // Clear local storage
-    localStorage.removeItem("schoolgate_user");
+    // Clear storage
+    sessionStorage.removeItem("schoolgate_user");
+    APP_STATE.user = null;
     
-    // Reset application state
-    APP_STATE = {
-        user: null,
-        permissions: [],
-        disciplinePoints: [],
-        activeTab: "permission"
-    };
-    
-    // Show login screen, hide app
+    // Hide app, show login
     elements.appScreen.classList.add("hidden");
     elements.loginScreen.classList.remove("hidden");
     
-    // Reset login form
-    elements.loginForm.reset();
-    elements.loginErrorMsg.classList.add("hidden");
+    // Reset login form if it exists
+    if (elements.loginForm) {
+        elements.loginForm.reset();
+    }
 }
 
 // ==============================================
@@ -262,51 +287,141 @@ function switchTab(tabId) {
     // Update active tab
     APP_STATE.activeTab = tabId;
     
-    // Update tab links
-    elements.tabLinks.forEach(link => {
-        const isActive = link.getAttribute("data-tab") === tabId;
-        
-        link.classList.toggle("text-blue-600", isActive);
-        link.classList.toggle("bg-blue-50", isActive);
-        link.classList.toggle("text-gray-700", !isActive);
-        link.classList.toggle("hover:bg-blue-50", !isActive);
-        link.classList.toggle("hover:text-blue-600", !isActive);
-    });
+    // Update page title
+    if (elements.pageTitle) {
+        elements.pageTitle.textContent = getTabTitle(tabId);
+    }
     
-    // Show the active tab content, hide others
-    elements.tabContents.forEach(content => {
-        content.classList.toggle("hidden", content.id !== `${tabId}Section`);
-    });
+    // Hide all pages
+    if (elements.dashboardPage) elements.dashboardPage.classList.add("hidden");
+    if (elements.permissionsPage) elements.permissionsPage.classList.remove("hidden");
+    if (elements.disciplinePage) elements.disciplinePage.classList.add("hidden");
+    if (elements.studentsPage) elements.studentsPage.classList.add("hidden");
+    
+    // Show active page
+    switch (tabId) {
+        case "dashboard":
+            if (elements.dashboardPage) elements.dashboardPage.classList.remove("hidden");
+            break;
+        case "permission":
+            if (elements.permissionsPage) elements.permissionsPage.classList.remove("hidden");
+            break;
+        case "discipline":
+            if (elements.disciplinePage) elements.disciplinePage.classList.remove("hidden");
+            break;
+        case "students":
+            if (elements.studentsPage) elements.studentsPage.classList.remove("hidden");
+            break;
+    }
+    
+    // Update nav links
+    updateNavLinks(tabId);
     
     // Load data for the active tab
     loadTabData(tabId);
+    
+    // Close mobile sidebar if open
+    if (elements.sidebar && elements.sidebar.classList.contains("open")) {
+        toggleMobileSidebar();
+    }
+}
+
+function getTabTitle(tabId) {
+    switch (tabId) {
+        case "dashboard": return "Dashboard";
+        case "permission": return "Perizinan";
+        case "discipline": return "Poin Kedisiplinan";
+        case "students": return "Daftar Siswa";
+        default: return "SchoolGate";
+    }
+}
+
+function updateNavLinks(activeTabId) {
+    // Remove active class from all nav links
+    if (elements.navDashboard) {
+        elements.navDashboard.classList.remove("bg-gray-100", "text-gray-900");
+        elements.navDashboard.classList.add("text-gray-600", "hover:text-gray-900", "hover:bg-gray-50");
+    }
+    
+    if (elements.navPermissions) {
+        elements.navPermissions.classList.remove("bg-gray-100", "text-gray-900");
+        elements.navPermissions.classList.add("text-gray-600", "hover:text-gray-900", "hover:bg-gray-50");
+    }
+    
+    if (elements.navDiscipline) {
+        elements.navDiscipline.classList.remove("bg-gray-100", "text-gray-900");
+        elements.navDiscipline.classList.add("text-gray-600", "hover:text-gray-900", "hover:bg-gray-50");
+    }
+    
+    if (elements.navStudents) {
+        elements.navStudents.classList.remove("bg-gray-100", "text-gray-900");
+        elements.navStudents.classList.add("text-gray-600", "hover:text-gray-900", "hover:bg-gray-50");
+    }
+    
+    // Add active class to current tab
+    switch (activeTabId) {
+        case "dashboard":
+            if (elements.navDashboard) {
+                elements.navDashboard.classList.add("bg-gray-100", "text-gray-900");
+                elements.navDashboard.classList.remove("text-gray-600", "hover:text-gray-900", "hover:bg-gray-50");
+            }
+            break;
+        case "permission":
+            if (elements.navPermissions) {
+                elements.navPermissions.classList.add("bg-gray-100", "text-gray-900");
+                elements.navPermissions.classList.remove("text-gray-600", "hover:text-gray-900", "hover:bg-gray-50");
+            }
+            break;
+        case "discipline":
+            if (elements.navDiscipline) {
+                elements.navDiscipline.classList.add("bg-gray-100", "text-gray-900");
+                elements.navDiscipline.classList.remove("text-gray-600", "hover:text-gray-900", "hover:bg-gray-50");
+            }
+            break;
+        case "students":
+            if (elements.navStudents) {
+                elements.navStudents.classList.add("bg-gray-100", "text-gray-900");
+                elements.navStudents.classList.remove("text-gray-600", "hover:text-gray-900", "hover:bg-gray-50");
+            }
+            break;
+    }
 }
 
 function showToast(title, message, type = "success") {
-    // Set toast content
-    elements.toastTitle.textContent = title;
-    elements.toastMessage.textContent = message;
+    // Create toast element
+    const toast = document.createElement("div");
+    toast.className = `fixed bottom-4 right-4 bg-${type === "success" ? "green" : "red"}-500 text-white px-4 py-3 rounded-md shadow-lg z-50 animate-fade-in`;
     
-    // Set toast type
-    elements.notificationToast.className = "fixed bottom-4 right-4 px-4 py-3 rounded-md shadow-lg notification";
+    toast.innerHTML = `
+        <div class="flex items-center">
+            <i data-lucide="${type === "success" ? "check-circle" : "alert-circle"}" class="h-5 w-5 mr-3"></i>
+            <div>
+                <p class="font-medium">${title}</p>
+                <p class="text-sm">${message}</p>
+            </div>
+            <button class="ml-4 text-white hover:text-gray-200 close-toast">
+                <i data-lucide="x" class="h-4 w-4"></i>
+            </button>
+        </div>
+    `;
     
-    if (type === "success") {
-        elements.notificationToast.classList.add("bg-green-500", "text-white");
-        elements.toastTitle.previousElementSibling.innerHTML = '<i class="fas fa-check-circle"></i>';
-    } else if (type === "error") {
-        elements.notificationToast.classList.add("bg-red-500", "text-white");
-        elements.toastTitle.previousElementSibling.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
-    } else if (type === "warning") {
-        elements.notificationToast.classList.add("bg-yellow-500", "text-white");
-        elements.toastTitle.previousElementSibling.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
-    }
+    document.body.appendChild(toast);
     
-    // Show toast
-    elements.notificationToast.classList.remove("hidden");
+    // Initialize Lucide icons
+    lucide.createIcons({
+        elements: [toast]
+    });
     
-    // Auto-hide after 5 seconds
+    // Add click event to close button
+    toast.querySelector(".close-toast").addEventListener("click", () => {
+        toast.remove();
+    });
+    
+    // Auto remove after 5 seconds
     setTimeout(() => {
-        elements.notificationToast.classList.add("hidden");
+        if (document.body.contains(toast)) {
+            toast.remove();
+        }
     }, 5000);
 }
 
@@ -326,7 +441,7 @@ function getInitials(name) {
 // ==============================================
 
 async function loadUserData() {
-    // Load initial data for the active tab
+    // Load data for the active tab
     loadTabData(APP_STATE.activeTab);
 }
 
@@ -342,6 +457,9 @@ async function loadTabData(tabId) {
             case "dashboard":
                 loadDashboardData();
                 break;
+            case "students":
+                await loadStudentsData();
+                break;
         }
     } catch (error) {
         console.error(`Error loading data for tab ${tabId}:`, error);
@@ -353,6 +471,8 @@ async function loadPermissionData() {
     const user = APP_STATE.user;
     if (!user) return;
     
+    showLoading();
+    
     try {
         const response = await apiCall("getPermissions", {
             role: user.role,
@@ -361,13 +481,25 @@ async function loadPermissionData() {
         
         if (response.success) {
             APP_STATE.permissions = response.permissions || [];
-            renderPermissionTable();
+            
+            if (user.role === CONFIG.ROLES.TEACHER) {
+                if (elements.teacherPermissionsTable) {
+                    renderTeacherPermissions(elements.teacherPermissionsTable, APP_STATE.permissions);
+                }
+            } else {
+                if (elements.studentPermissionsTable) {
+                    renderStudentPermissions(elements.studentPermissionsTable, APP_STATE.permissions);
+                }
+            }
         } else {
             console.error("Failed to load permissions:", response.message);
+            showToast("Error", "Gagal memuat data izin", "error");
         }
     } catch (error) {
         console.error("Error loading permissions:", error);
-        throw error;
+        showToast("Error", "Terjadi kesalahan saat memuat data", "error");
+    } finally {
+        hideLoading();
     }
 }
 
@@ -407,14 +539,37 @@ async function loadDisciplineData() {
 }
 
 function loadDashboardData() {
-    // Implement dashboard data loading
-    elements.dashboardSection.innerHTML = `
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-semibold text-gray-800">Dashboard</h2>
-        </div>
-        <p class="text-gray-600">Selamat datang, ${APP_STATE.user.name}!</p>
-        <p class="text-gray-600">Dashboard dalam pengembangan.</p>
-    `;
+    if (elements.dashboardPage) {
+        elements.dashboardPage.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Selamat Datang</h3>
+                        <p class="card-description">${APP_STATE.user ? APP_STATE.user.name : 'User'}</p>
+                    </div>
+                    <div class="card-content">
+                        <p>Gunakan menu navigasi untuk mengelola permintaan izin dan poin kedisiplinan.</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+async function loadStudentsData() {
+    if (elements.studentsPage) {
+        elements.studentsPage.innerHTML = `
+            <h2 class="text-2xl font-bold mb-6">Daftar Siswa</h2>
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Dalam Pengembangan</h3>
+                </div>
+                <div class="card-content">
+                    <p>Fitur ini sedang dalam tahap pengembangan.</p>
+                </div>
+            </div>
+        `;
+    }
 }
 
 // ==============================================
@@ -556,169 +711,138 @@ function renderTeacherDisciplineView() {
 // MODAL FUNCTIONS
 // ==============================================
 
-function showModal(title, content, actions) {
-    // Create modal HTML
-    const modalHtml = `
-        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div class="sm:flex sm:items-start">
-                <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <i class="fas fa-sign-out-alt text-blue-600"></i>
-                </div>
-                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900">${title}</h3>
-                    <div class="mt-2">
-                        ${content}
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-            ${actions}
-        </div>
-    `;
+function showModal(title, content) {
+    if (!elements.modal || !elements.modalTitle || !elements.modalContent) return;
     
-    // Set modal content
-    elements.modalContent.innerHTML = modalHtml;
-    
-    // Show modal
-    elements.modalContainer.classList.remove("hidden");
-    
-    // Add event listener to close modal when clicking outside
-    elements.modalContainer.addEventListener("click", (e) => {
-        if (e.target === elements.modalContainer) {
-            closeModal();
-        }
-    });
-    
-    // Add event listeners to close buttons
-    document.querySelectorAll(".modal-close-btn").forEach(btn => {
-        btn.addEventListener("click", closeModal);
-    });
+    elements.modalTitle.textContent = title;
+    elements.modalContent.innerHTML = content;
+    elements.modal.classList.remove("hidden");
 }
 
 function closeModal() {
-    elements.modalContainer.classList.add("hidden");
+    if (!elements.modal) return;
+    elements.modal.classList.add("hidden");
 }
 
 function showNewPermissionModal() {
-    // Form untuk mengajukan izin baru
     const content = `
-        <form id="newPermissionForm">
-            <div class="mb-4">
-                <label for="reason" class="block text-sm font-medium text-gray-700 mb-1">Alasan</label>
-                <select id="reason" name="reason" class="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md" required>
-                    <option value="">Pilih alasan</option>
-                    <option value="Sakit">Sakit</option>
-                    <option value="Keperluan keluarga">Keperluan keluarga</option>
-                    <option value="Janji dokter">Janji dokter</option>
-                    <option value="Lainnya">Lainnya</option>
-                </select>
+        <form id="new-permission-form" class="space-y-4">
+            <div class="space-y-2">
+                <label for="reason" class="text-sm font-medium">Alasan Izin</label>
+                <input type="text" id="reason" class="input" required placeholder="Masukkan alasan izin">
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                    <label for="date" class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
-                    <input type="date" id="date" name="date" class="block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
-                </div>
-                <div>
-                    <label for="time" class="block text-sm font-medium text-gray-700 mb-1">Waktu (Opsional)</label>
-                    <input type="time" id="time" name="time" class="block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                </div>
+            <div class="space-y-2">
+                <label for="date" class="text-sm font-medium">Tanggal</label>
+                <input type="date" id="date" class="input" required>
             </div>
-            <div class="mb-4">
-                <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Catatan Tambahan (Opsional)</label>
-                <textarea id="notes" name="notes" rows="3" class="block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+            <div class="space-y-2">
+                <label for="time" class="text-sm font-medium">Waktu (Opsional)</label>
+                <input type="time" id="time" class="input">
+            </div>
+            <div class="space-y-2">
+                <label for="notes" class="text-sm font-medium">Catatan Tambahan (Opsional)</label>
+                <textarea id="notes" class="input h-24" placeholder="Masukkan catatan tambahan jika diperlukan"></textarea>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button type="button" id="cancel-btn" class="btn btn-outline">Batal</button>
+                <button type="submit" class="btn btn-primary">Ajukan Izin</button>
             </div>
         </form>
     `;
     
-    const actions = `
-        <button type="button" id="submitPermissionBtn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
-            Ajukan
-        </button>
-        <button type="button" class="modal-close-btn mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-            Batal
-        </button>
-    `;
+    showModal("Ajukan Izin Baru", content);
     
-    showModal("Ajukan Izin Baru", content, actions);
+    // Set default date to today
+    const dateInput = document.getElementById("date");
+    if (dateInput) {
+        dateInput.valueAsDate = new Date();
+    }
     
-    // Event listener untuk tombol submit
-    document.getElementById("submitPermissionBtn").addEventListener("click", handleSubmitPermission);
+    // Add event listeners
+    const cancelBtn = document.getElementById("cancel-btn");
+    if (cancelBtn) {
+        cancelBtn.addEventListener("click", closeModal);
+    }
+    
+    const form = document.getElementById("new-permission-form");
+    if (form) {
+        form.addEventListener("submit", handleSubmitPermission);
+    }
 }
 
 function showViewPermissionModal(permissionId) {
-    // Find the permission in the state
     const permission = APP_STATE.permissions.find(p => p.id === permissionId);
-    if (!permission) return;
+    if (!permission) {
+        showToast("Error", "Data izin tidak ditemukan", "error");
+        return;
+    }
     
-    const statusClass = getStatusBadgeClass(permission.status);
-    const statusLabel = getStatusLabel(permission.status);
-    
-    const content = `
+    showModal(
+        "Detail Permintaan Izin",
+        `
         <div class="space-y-4">
-            <div class="flex justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Status</p>
-                    <p class="mt-1">
-                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
-                            ${statusLabel}
-                        </span>
-                    </p>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Tanggal</p>
-                    <p class="mt-1 text-sm text-gray-900">${formatDate(permission.date)}</p>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Waktu</p>
-                    <p class="mt-1 text-sm text-gray-900">${permission.time || 'Tidak ditentukan'}</p>
-                </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Siswa</p>
+                <p>${permission.studentName || 'Siswa'} ${permission.studentClass ? `(${permission.studentClass})` : ''}</p>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Tanggal</p>
+                <p>${formatDate(permission.date)}</p>
             </div>
             <div>
                 <p class="text-sm font-medium text-gray-500">Alasan</p>
-                <p class="mt-1 text-sm text-gray-900">${permission.reason}</p>
+                <p>${permission.reason}</p>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Status</p>
+                <p>
+                    <span class="badge badge-${permission.status === 'approved' ? 'approved' : permission.status === 'rejected' ? 'rejected' : 'pending'}">
+                        ${permission.status === 'approved' ? 'Disetujui' : permission.status === 'rejected' ? 'Ditolak' : 'Menunggu'}
+                    </span>
+                </p>
             </div>
             ${permission.notes ? `
             <div>
-                <p class="text-sm font-medium text-gray-500">Catatan</p>
-                <p class="mt-1 text-sm text-gray-900">${permission.notes}</p>
+                <p class="text-sm font-medium text-gray-500">Catatan Siswa</p>
+                <p>${permission.notes}</p>
             </div>
             ` : ''}
             ${permission.teacherNotes ? `
             <div>
                 <p class="text-sm font-medium text-gray-500">Catatan Guru</p>
-                <p class="mt-1 text-sm text-gray-900">${permission.teacherNotes}</p>
+                <p>${permission.teacherNotes}</p>
             </div>
             ` : ''}
+            <div class="flex justify-end pt-2">
+                <button id="close-detail-btn" class="btn btn-outline">Tutup</button>
+            </div>
         </div>
-    `;
+        `
+    );
     
-    const actions = `
-        <button type="button" class="modal-close-btn w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:w-auto sm:text-sm">
-            Tutup
-        </button>
-    `;
-    
-    showModal("Detail Permintaan Izin", content, actions);
+    document.getElementById('close-detail-btn').addEventListener('click', closeModal);
 }
 
 // ==============================================
 // ACTION HANDLERS
 // ==============================================
 
-async function handleSubmitPermission() {
-    const form = document.getElementById("newPermissionForm");
-    const reason = form.reason.value;
-    const date = form.date.value;
-    const time = form.time.value;
-    const notes = form.notes.value;
+async function handleSubmitPermission(e) {
+    e.preventDefault();
     
-    if (!reason || !date) {
-        alert("Alasan dan tanggal wajib diisi");
-        return;
-    }
+    const reason = document.getElementById("reason").value;
+    const date = document.getElementById("date").value;
+    const time = document.getElementById("time").value || "";
+    const notes = document.getElementById("notes").value || "";
     
+    submitPermission(reason, date, time, notes);
+}
+
+async function submitPermission(reason, date, time, notes) {
     try {
+        closeModal();
+        showLoading();
+        
         const response = await apiCall("submitPermission", {
             studentId: APP_STATE.user.id,
             reason,
@@ -728,48 +852,44 @@ async function handleSubmitPermission() {
         });
         
         if (response.success) {
-            // Close modal
-            closeModal();
-            
-            // Reload permissions
-            await loadPermissionData();
-            
-            // Show success message
             showToast("Sukses", "Permintaan izin berhasil diajukan", "success");
+            await loadPermissionData();
         } else {
-            showToast("Error", response.message, "error");
+            showToast("Error", response.message || "Gagal mengajukan izin", "error");
         }
     } catch (error) {
         console.error("Error submitting permission:", error);
-        showToast("Error", "Gagal mengajukan permintaan izin", "error");
+        showToast("Error", "Terjadi kesalahan saat mengajukan izin", "error");
+    } finally {
+        hideLoading();
     }
 }
 
 async function handlePermissionAction(permissionId, status) {
-    try {
-        const response = await apiCall("updatePermission", {
-            permissionId: permissionId,
-            status: status,
-            teacherNotes: "" // Could add a note input in the future
-        });
-        
-        if (response.success) {
-            // Reload permissions
-            await loadPermissionData();
-            
-            // Show success message
-            showToast(
-                "Sukses", 
-                `Permintaan izin berhasil ${status === "approved" ? "disetujui" : "ditolak"}.`, 
-                "success"
-            );
-        } else {
-            showToast("Error", response.message, "error");
-        }
-    } catch (error) {
-        console.error("Error updating permission:", error);
-        showToast("Error", "Gagal memperbarui permintaan izin", "error");
-    }
+    showModal(
+        status === 'approved' ? 'Setujui Izin' : 'Tolak Izin',
+        `
+        <form id="permission-action-form" class="space-y-4">
+            <div class="space-y-2">
+                <label for="teacher-notes" class="text-sm font-medium">Catatan (opsional)</label>
+                <textarea id="teacher-notes" class="input h-24" placeholder="Masukkan catatan jika diperlukan"></textarea>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button type="button" id="cancel-action" class="btn btn-outline">Batal</button>
+                <button type="submit" class="btn ${status === 'approved' ? 'btn-primary' : 'btn-destructive'}">
+                    ${status === 'approved' ? 'Setujui' : 'Tolak'}
+                </button>
+            </div>
+        </form>
+        `
+    );
+    
+    document.getElementById('cancel-action').addEventListener('click', closeModal);
+    document.getElementById('permission-action-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const teacherNotes = document.getElementById('teacher-notes').value;
+        updatePermissionStatus(permissionId, status, teacherNotes);
+    });
 }
 
 // ==============================================
@@ -805,18 +925,18 @@ async function apiCall(action, params = {}) {
 // ==============================================
 
 function formatDate(dateStr) {
-    if (!dateStr) return "-";
+    if (!dateStr) return '-';
     
-    try {
-        const date = new Date(dateStr);
-        return new Intl.DateTimeFormat('id-ID', {
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric'
-        }).format(date);
-    } catch (e) {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
         return dateStr;
     }
+    
+    return date.toLocaleDateString('id-ID', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
 }
 
 function getStatusBadgeClass(status) {
@@ -842,5 +962,150 @@ function getStatusLabel(status) {
             return "Ditolak";
         default:
             return status;
+    }
+}
+
+// Loading helpers
+function showLoading() {
+    if (elements.loadingOverlay) {
+        elements.loadingOverlay.classList.remove("hidden");
+    }
+}
+
+function hideLoading() {
+    if (elements.loadingOverlay) {
+        elements.loadingOverlay.classList.add("hidden");
+    }
+}
+
+// Helper functions for rendering permissions
+function renderStudentPermissions(tableElement, permissions) {
+    if (!tableElement) return;
+    
+    if (permissions.length === 0) {
+        tableElement.innerHTML = `
+            <tr>
+                <td colspan="4" class="px-6 py-4 text-center text-gray-500">
+                    Tidak ada data permintaan izin
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    // Sort by date, newest first
+    permissions.sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date));
+    
+    tableElement.innerHTML = permissions.map(p => `
+        <tr>
+            <td class="px-6 py-4">${formatDate(p.date)}</td>
+            <td class="px-6 py-4">${p.reason}</td>
+            <td class="px-6 py-4">
+                <span class="badge badge-${p.status === 'approved' ? 'approved' : p.status === 'rejected' ? 'rejected' : 'pending'}">
+                    ${p.status === 'approved' ? 'Disetujui' : p.status === 'rejected' ? 'Ditolak' : 'Menunggu'}
+                </span>
+            </td>
+            <td class="px-6 py-4">${p.teacherNotes || '-'}</td>
+        </tr>
+    `).join('');
+}
+
+function renderTeacherPermissions(tableElement, permissions) {
+    if (!tableElement) return;
+    
+    if (permissions.length === 0) {
+        tableElement.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                    Tidak ada data permintaan izin
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    // Sort permissions: pending first, then by date
+    permissions.sort((a, b) => {
+        if (a.status === 'pending' && b.status !== 'pending') return -1;
+        if (a.status !== 'pending' && b.status === 'pending') return 1;
+        return new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date);
+    });
+    
+    tableElement.innerHTML = permissions.map(p => `
+        <tr>
+            <td class="px-6 py-4">${p.studentName || 'Siswa'} ${p.studentClass ? `(${p.studentClass})` : ''}</td>
+            <td class="px-6 py-4">${formatDate(p.date)}</td>
+            <td class="px-6 py-4">${p.reason}</td>
+            <td class="px-6 py-4">
+                <span class="badge badge-${p.status === 'approved' ? 'approved' : p.status === 'rejected' ? 'rejected' : 'pending'}">
+                    ${p.status === 'approved' ? 'Disetujui' : p.status === 'rejected' ? 'Ditolak' : 'Menunggu'}
+                </span>
+            </td>
+            <td class="px-6 py-4">
+                ${p.status === 'pending' ? `
+                    <div class="flex space-x-2">
+                        <button class="btn btn-outline py-1 px-2 h-8 approve-btn" data-id="${p.id}">
+                            <i data-lucide="check" class="h-4 w-4"></i>
+                        </button>
+                        <button class="btn btn-outline py-1 px-2 h-8 reject-btn" data-id="${p.id}">
+                            <i data-lucide="x" class="h-4 w-4"></i>
+                        </button>
+                    </div>
+                ` : `
+                    <button class="btn btn-outline py-1 px-2 h-8 view-btn" data-id="${p.id}">
+                        <i data-lucide="eye" class="h-4 w-4"></i>
+                    </button>
+                `}
+            </td>
+        </tr>
+    `).join('');
+    
+    // Initialize Lucide icons
+    lucide.createIcons({
+        elements: [tableElement]
+    });
+    
+    // Add event listeners to buttons
+    tableElement.querySelectorAll('.approve-btn').forEach(btn => {
+        btn.addEventListener('click', e => handlePermissionAction(e.currentTarget.dataset.id, 'approved'));
+    });
+    
+    tableElement.querySelectorAll('.reject-btn').forEach(btn => {
+        btn.addEventListener('click', e => handlePermissionAction(e.currentTarget.dataset.id, 'rejected'));
+    });
+    
+    tableElement.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', e => showViewPermissionModal(e.currentTarget.dataset.id));
+    });
+}
+
+// Function to update permission status
+async function updatePermissionStatus(permissionId, status, teacherNotes) {
+    closeModal();
+    showLoading();
+    
+    try {
+        const response = await apiCall("updatePermission", {
+            permissionId,
+            status,
+            teacherNotes: teacherNotes || "",
+            teacherId: APP_STATE.user.id
+        });
+        
+        if (response.success) {
+            showToast(
+                "Sukses", 
+                `Permintaan izin berhasil ${status === "approved" ? "disetujui" : "ditolak"}`, 
+                "success"
+            );
+            await loadPermissionData();
+        } else {
+            showToast("Error", response.message || "Gagal memperbarui status izin", "error");
+        }
+    } catch (error) {
+        console.error("Error updating permission status:", error);
+        showToast("Error", "Terjadi kesalahan saat memperbarui status izin", "error");
+    } finally {
+        hideLoading();
     }
 } 

@@ -1,0 +1,108 @@
+# CORS Rules for Google Apps Script Backend
+
+When working with Google Apps Script as a backend service, the following CORS rules apply:
+
+1. Simple Requests (GET, POST with specific content types) are handled automatically by Google Apps Script.
+
+2. For POST requests, use "application/x-www-form-urlencoded" content type (NOT JSON):
+   - Use `new URLSearchParams({...})` instead of `JSON.stringify({...})`
+   - Example:
+     ```javascript
+     fetch(API_URL, {
+       method: "POST",
+       body: new URLSearchParams({
+         action: "login",
+         username: username,
+         password: password
+       })
+     })
+     ```
+
+3. Access the request data on the server side using:
+   ```javascript
+   function doPost(e) {
+     const action = e.parameter.action;
+     const username = e.parameter.username;
+     // ...other parameters
+   }
+   ```
+
+4. Return responses as JSON with appropriate content type:
+   ```javascript
+   return ContentService.createTextOutput(JSON.stringify({
+     success: true,
+     message: "Success message"
+   })).setMimeType(ContentService.MimeType.JSON);
+   ```
+
+5. Do NOT modify the response headers manually, Google handles CORS for you.
+
+6. For preflight (OPTIONS) requests, Google Apps Script takes care of them automatically.
+
+7. Deploy the script as a web app with "Execute as: Me" and "Who has access: Anyone" for public access.
+
+8. The client-side application must be served over HTTPS if the Google Apps Script is deployed publicly.
+
+=============================================
+1. FRONTEND (GitHub Pages / HTML + JS)
+=============================================
+
+- Gunakan fetch POST sederhana dengan body tipe "application/x-www-form-urlencoded".
+  Jangan pakai raw JSON atau custom header.
+  
+Contoh:
+fetch(URL, {
+  method: "POST",
+  body: new URLSearchParams({
+    action: "getInventaris",
+    username: "nama_user",
+    password: "password_user"
+  })
+})
+
+- Jangan set header "Content-Type" ke "application/json"
+- Jangan pakai custom headers (seperti Authorization, X-Requested-With, dsb)
+
+=============================================
+2. BACKEND (Google Apps Script)
+=============================================
+
+- Gunakan fungsi doPost(e) untuk menerima request POST.
+
+Contoh:
+function doPost(e) {
+  const action = e.parameter.action;
+  const username = e.parameter.username;
+  const password = e.parameter.password;
+  // proses aksi berdasarkan parameter
+}
+
+- Ambil data dari e.parameter, bukan dari e.postData.contents kecuali untuk data besar (JSON string)
+- Tidak perlu set header CORS manual (tidak perlu setHeader("Access-Control-Allow-Origin", "*"))
+
+=============================================
+3. DEPLOYMENT SETTING (GAS Web App)
+=============================================
+
+- Saat klik "Deploy" > "Manage Deployments":
+  - Execute As: **Me (pemilik script)**
+  - Access: **Anyone (even anonymous)**
+
+=============================================
+4. KENAPA BERHASIL?
+=============================================
+
+Karena:
+- Body POST sederhana (x-www-form-urlencoded)
+- Tidak memicu preflight OPTIONS
+- Tidak ada custom headers
+- Google secara otomatis izinkan CORS untuk request sederhana
+
+=============================================
+5. CATATAN TAMBAHAN
+=============================================
+
+- Jika pakai application/json atau Authorization Header => HARUS tangani CORS manual dan OPTIONS
+- Jika ingin aman dan ringan, tetap gunakan URLSearchParams
+
+=============================================

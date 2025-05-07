@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolGate - Student Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- CSS linking with path check -->
+    <script>
+        // Create the correct CSS link based on protocol
+        document.write(`<link rel="stylesheet" href="${window.location.protocol === 'file:' ? '../css/styles.css' : '/css/styles.css'}">`);
+    </script>
+</head>
+<body class="bg-background min-h-screen grid grid-cols-[auto_1fr] text-foreground">
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center space-x-2">
+                <svg class="animate-spin h-5 w-5 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-gray-700">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Permission Request Modal -->
+    <div id="permission-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Ajukan Perizinan</h3>
+                <button class="modal-close" onclick="closeModal('permission-modal')">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <form id="permission-form" class="space-y-4">
+                    <div class="space-y-2">
+                        <label for="reason" class="form-label">Alasan Izin</label>
+                        <select id="reason" class="input" required>
+                            <option value="">-- Pilih Alasan --</option>
+                            <option value="Sakit">Sakit</option>
+                            <option value="Keperluan Keluarga">Keperluan Keluarga</option>
+                            <option value="Acara Keagamaan">Acara Keagamaan</option>
+                            <option value="Kompetisi/Lomba">Kompetisi/Lomba</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2" id="other-reason-container" style="display: none;">
+                        <label for="other-reason" class="form-label">Alasan Lainnya</label>
+                        <input type="text" id="other-reason" class="input" placeholder="Jelaskan alasan izin">
+                    </div>
+                    <div class="space-y-2">
+                        <label for="date" class="form-label">Tanggal</label>
+                        <input type="date" id="date" class="input" required>
+                    </div>
+                    <div class="space-y-2">
+                        <label for="time" class="form-label">Waktu Keluar</label>
+                        <input type="time" id="time" class="input" required>
+                    </div>
+                    <div class="space-y-2">
+                        <label for="notes" class="form-label">Catatan Tambahan</label>
+                        <textarea id="notes" class="input" rows="3" placeholder="Jelaskan lebih detail jika diperlukan"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-subtle" onclick="closeModal('permission-modal')">Batal</button>
+                <button class="btn btn-primary" id="submit-permission-btn">Ajukan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="flex h-screen flex-col p-4 border-r border-border bg-card">
+            <div class="mb-6 px-2">
+                <h1 class="text-xl font-bold">SchoolGate</h1>
+            </div>
+            
+            <nav class="flex-1 space-y-2">
+                <a href="#" class="nav-link active" data-page="dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-link" data-page="permissions">
+                    <i data-lucide="clipboard-list"></i>
+                    <span>Perizinan</span>
+                </a>
+                <a href="#" class="nav-link" data-page="points">
+                    <i data-lucide="alert-triangle"></i>
+                    <span>Poin Pelanggaran</span>
+                </a>
+            </nav>
+            
+            <div class="border-t border-border pt-4 mt-4">
+                <div class="user-info mb-4 px-2">
+                    <p class="text-sm font-medium" id="student-name">Loading...</p>
+                    <p class="text-xs text-muted-foreground" id="student-class">Loading...</p>
+                </div>
+                <button id="logout-btn" class="btn btn-subtle w-full justify-start">
+                    <i data-lucide="log-out"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="p-6">
+        <!-- Dashboard Page -->
+        <div class="page" id="dashboard-page">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Dashboard Siswa</h2>
+                <div class="text-sm text-muted-foreground" id="current-date"></div>
+            </div>
+
+            <!-- Status Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Permission Status Card -->
+                <div class="card bg-white shadow-md hover:shadow-lg transition-shadow">
+                    <div class="card-content p-6 flex items-start">
+                        <div class="mr-4 p-3 rounded-full bg-blue-100">
+                            <i data-lucide="clipboard-list" class="h-6 w-6 text-blue-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-muted-foreground">Status Perizinan</p>
+                            <h3 class="text-2xl font-bold mt-1 mb-1" id="pending-permissions">0</h3>
+                            <p class="text-xs text-muted-foreground">Menunggu persetujuan</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Discipline Points Card -->
+                <div class="card bg-white shadow-md hover:shadow-lg transition-shadow">
+                    <div class="card-content p-6 flex items-start">
+                        <div class="mr-4 p-3 rounded-full bg-amber-100">
+                            <i data-lucide="alert-triangle" class="h-6 w-6 text-amber-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-muted-foreground">Poin Pelanggaran</p>
+                            <h3 class="text-2xl font-bold mt-1 mb-1" id="violation-points">0</h3>
+                            <p class="text-xs text-muted-foreground">Total akumulasi</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions Card -->
+                <div class="card bg-white shadow-md hover:shadow-lg transition-shadow">
+                    <div class="card-content p-6">
+                        <h3 class="font-semibold mb-4">Aksi Cepat</h3>
+                        <div class="space-y-3">
+                            <button id="quick-request-btn" class="btn btn-primary w-full flex items-center justify-center">
+                                <i data-lucide="plus-circle" class="h-4 w-4 mr-2"></i>
+                                Ajukan Izin Keluar
+                            </button>
+                            <button class="btn btn-subtle w-full flex items-center justify-center" data-page="permissions">
+                                <i data-lucide="clipboard-list" class="h-4 w-4 mr-2"></i>
+                                Lihat Riwayat Izin
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card bg-white shadow-md">
+                <div class="card-header border-b p-6">
+                    <h3 class="text-lg font-semibold">Aktivitas Terbaru</h3>
+                </div>
+                <div class="card-content p-0">
+                    <div id="recent-activity" class="divide-y">
+                        <div class="p-6 text-center text-muted-foreground">
+                            <p>Loading data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Permissions Page -->
+        <div class="page hidden" id="permissions-page">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Manajemen Perizinan</h2>
+                <button id="new-permission-btn" class="btn btn-primary">
+                    <i data-lucide="plus" class="h-4 w-4 mr-1"></i> Ajukan Izin Baru
+                </button>
+            </div>
+            
+            <div class="card bg-white shadow-md mb-6">
+                <div class="card-header border-b p-6">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Daftar Perizinan</h3>
+                        <select id="permission-filter" class="input">
+                            <option value="all">Semua Status</option>
+                            <option value="pending">Menunggu</option>
+                            <option value="approved">Disetujui</option>
+                            <option value="rejected">Ditolak</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-content p-0">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead>
+                                <tr class="bg-gray-50 border-b">
+                                    <th class="py-3 px-6">Tanggal</th>
+                                    <th class="py-3 px-6">Alasan</th>
+                                    <th class="py-3 px-6">Waktu</th>
+                                    <th class="py-3 px-6">Status</th>
+                                    <th class="py-3 px-6">Catatan Guru</th>
+                                </tr>
+                            </thead>
+                            <tbody id="permissions-list" class="divide-y">
+                                <tr>
+                                    <td colspan="5" class="py-8 text-center text-muted-foreground">
+                                        Loading perizinan...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Points Page -->
+        <div class="page hidden" id="points-page">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Poin Pelanggaran</h2>
+            </div>
+            
+            <div class="card bg-white shadow-md mb-6">
+                <div class="card-header border-b p-6">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Riwayat Pelanggaran</h3>
+                        <div class="text-xl font-bold" id="total-points">0 poin</div>
+                    </div>
+                </div>
+                <div class="card-content p-0">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead>
+                                <tr class="bg-gray-50 border-b">
+                                    <th class="py-3 px-6">Tanggal</th>
+                                    <th class="py-3 px-6">Pelanggaran</th>
+                                    <th class="py-3 px-6">Poin</th>
+                                    <th class="py-3 px-6">Catatan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="points-list" class="divide-y">
+                                <tr>
+                                    <td colspan="4" class="py-8 text-center text-muted-foreground">
+                                        Loading riwayat pelanggaran...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Load JavaScript -->
+    <script src="../js/student-dashboard.js"></script>
+</body>
+</html> 
