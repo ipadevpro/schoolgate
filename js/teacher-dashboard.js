@@ -261,82 +261,6 @@ async function loadLateStudents() {
     }
 }
 
-// Temporarily use mock data until API is properly deployed
-async function loadLateStudents() {
-    try {
-        // Mock data for demo purposes until API is fixed
-        const today = new Date().toISOString().split('T')[0];
-        
-        // Generate some mock students based on allStudents array
-        lateStudents = [];
-        
-        if (allStudents && allStudents.length > 0) {
-            // Use up to 3 random students from the student list
-            const studentCount = Math.min(3, allStudents.length);
-            const shuffled = [...allStudents].sort(() => 0.5 - Math.random());
-            
-            for (let i = 0; i < studentCount; i++) {
-                const student = shuffled[i];
-                // Random time between 7:30 and 8:15
-                const hour = 7;
-                const minute = 30 + Math.floor(Math.random() * 45);
-                const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                
-                // Random delay between 5 and 45 minutes
-                const duration = 5 + Math.floor(Math.random() * 40);
-                
-                lateStudents.push({
-                    id: 'mock-' + Math.random().toString(36).substring(2, 9),
-                    studentId: student.id,
-                    studentName: student.name,
-                    studentClass: student.class || '-',
-                    date: today,
-                    time: time,
-                    duration: duration,
-                    reason: 'Demo data - API masih dalam pengembangan',
-                    recordedBy: currentUser.id,
-                    timestamp: new Date()
-                });
-            }
-        } else {
-            // If no students loaded yet, use hardcoded names
-            const mockNames = [
-                { name: 'Budi Santoso', class: 'X-A' },
-                { name: 'Siti Nuraini', class: 'XI-B' },
-                { name: 'Ahmad Hidayat', class: 'XII-C' }
-            ];
-            
-            mockNames.forEach((mockStudent, index) => {
-                // Random time between 7:30 and 8:15
-                const hour = 7;
-                const minute = 30 + Math.floor(Math.random() * 45);
-                const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                
-                // Random delay between 5 and 45 minutes
-                const duration = 5 + Math.floor(Math.random() * 40);
-                
-                lateStudents.push({
-                    id: 'mock-' + Math.random().toString(36).substring(2, 9),
-                    studentId: 'mock-student-' + index,
-                    studentName: mockStudent.name,
-                    studentClass: mockStudent.class,
-                    date: today,
-                    time: time,
-                    duration: duration,
-                    reason: 'Demo data - API masih dalam pengembangan',
-                    recordedBy: currentUser.id,
-                    timestamp: new Date()
-                });
-            });
-        }
-        
-        console.log('Using mock data for late students due to API issues');
-    } catch (error) {
-        console.error('Error creating mock late students:', error);
-        lateStudents = [];
-    }
-}
-
 // Load late statistics from API
 async function loadLateStatistics() {
     try {
@@ -350,75 +274,6 @@ async function loadLateStatistics() {
         }
     } catch (error) {
         console.error('Error loading late statistics:', error);
-    }
-}
-
-// Temporarily use mock data for late statistics until API is properly deployed
-async function loadLateStatistics() {
-    try {
-        // Generate mock statistics
-        const mockStatistics = {
-            totalLate: lateStudents.length,
-            frequentStudents: [],
-            byDayOfWeek: [0, 0, 0, 0, 0, 0, 0]
-        };
-        
-        // Generate frequent students data using allStudents or mock data
-        if (allStudents && allStudents.length > 0) {
-            // Use up to 5 random students
-            const studentCount = Math.min(5, allStudents.length);
-            const shuffled = [...allStudents].sort(() => 0.5 - Math.random());
-            
-            for (let i = 0; i < studentCount; i++) {
-                const student = shuffled[i];
-                mockStatistics.frequentStudents.push({
-                    studentId: student.id,
-                    studentName: student.name,
-                    studentClass: student.class || '-',
-                    count: Math.floor(Math.random() * 10) + 1 // 1-10 times
-                });
-            }
-        } else {
-            // If no students loaded yet, use hardcoded names
-            const mockNames = [
-                { name: 'Budi Santoso', class: 'X-A' },
-                { name: 'Siti Nuraini', class: 'XI-B' },
-                { name: 'Ahmad Hidayat', class: 'XII-C' },
-                { name: 'Dewi Safitri', class: 'XI-A' },
-                { name: 'Rudi Hermawan', class: 'X-C' }
-            ];
-            
-            mockNames.forEach((mockStudent, index) => {
-                mockStatistics.frequentStudents.push({
-                    studentId: 'mock-student-' + index,
-                    studentName: mockStudent.name,
-                    studentClass: mockStudent.class,
-                    count: Math.floor(Math.random() * 10) + 1 // 1-10 times
-                });
-            });
-        }
-        
-        // Sort by count (highest first)
-        mockStatistics.frequentStudents.sort((a, b) => b.count - a.count);
-        
-        // Generate day of week data - more on weekdays, less on weekends
-        mockStatistics.byDayOfWeek = [
-            Math.floor(Math.random() * 3),     // Sunday (0-2)
-            Math.floor(Math.random() * 15) + 5, // Monday (5-19)
-            Math.floor(Math.random() * 12) + 3, // Tuesday (3-14)
-            Math.floor(Math.random() * 10) + 4, // Wednesday (4-13)
-            Math.floor(Math.random() * 11) + 2, // Thursday (2-12)
-            Math.floor(Math.random() * 8) + 1,  // Friday (1-8)
-            Math.floor(Math.random() * 2)       // Saturday (0-1)
-        ];
-        
-        // Render the mock data
-        renderFrequentLateStudents(mockStatistics.frequentStudents);
-        renderLatenessByDayChart(mockStatistics.byDayOfWeek);
-        
-        console.log('Using mock data for late statistics due to API issues');
-    } catch (error) {
-        console.error('Error creating mock late statistics:', error);
     }
 }
 
@@ -920,125 +775,6 @@ async function loadAllLateRecords() {
     }
 }
 
-// Temporarily use mock data for all late records until API is properly deployed
-async function loadAllLateRecords() {
-    try {
-        // Generate more comprehensive mock data for the late students table
-        const mockLateRecords = [];
-        
-        // Generate records spanning the last 30 days
-        const today = new Date();
-        
-        if (allStudents && allStudents.length > 0) {
-            // Create 10-20 random late records using actual students
-            const recordCount = 10 + Math.floor(Math.random() * 11); // 10-20 records
-            
-            for (let i = 0; i < recordCount; i++) {
-                // Random student from actual list
-                const student = allStudents[Math.floor(Math.random() * allStudents.length)];
-                
-                // Random date within the last 30 days
-                const date = new Date(today);
-                date.setDate(date.getDate() - Math.floor(Math.random() * 30));
-                const dateStr = date.toISOString().split('T')[0];
-                
-                // Random time between 7:30 and 8:15
-                const hour = 7;
-                const minute = 30 + Math.floor(Math.random() * 45);
-                const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                
-                // Random delay between 5 and 45 minutes
-                const duration = 5 + Math.floor(Math.random() * 40);
-                
-                // Random reason for being late
-                const reasons = [
-                    'Transportasi umum terlambat',
-                    'Bangun kesiangan',
-                    'Kemacetan lalu lintas',
-                    'Urusan keluarga',
-                    'Hujan lebat',
-                    'Mengantar saudara ke sekolah',
-                    'Sakit ringan'
-                ];
-                const reason = reasons[Math.floor(Math.random() * reasons.length)];
-                
-                mockLateRecords.push({
-                    id: 'mock-' + Math.random().toString(36).substring(2, 9),
-                    studentId: student.id,
-                    studentName: student.name,
-                    studentClass: student.class || '-',
-                    date: dateStr,
-                    time: time,
-                    duration: duration,
-                    reason: reason,
-                    recordedBy: currentUser.id,
-                    timestamp: date
-                });
-            }
-        } else {
-            // If no students loaded yet, use hardcoded names
-            const mockNames = [
-                { name: 'Budi Santoso', class: 'X-A' },
-                { name: 'Siti Nuraini', class: 'XI-B' },
-                { name: 'Ahmad Hidayat', class: 'XII-C' },
-                { name: 'Dewi Safitri', class: 'XI-A' },
-                { name: 'Rudi Hermawan', class: 'X-C' }
-            ];
-            
-            // Create 2-3 records for each mock student
-            mockNames.forEach((mockStudent, studentIndex) => {
-                const recordCount = 2 + Math.floor(Math.random() * 2); // 2-3 records per student
-                
-                for (let i = 0; i < recordCount; i++) {
-                    // Random date within the last 30 days
-                    const date = new Date(today);
-                    date.setDate(date.getDate() - Math.floor(Math.random() * 30));
-                    const dateStr = date.toISOString().split('T')[0];
-                    
-                    // Random time between 7:30 and 8:15
-                    const hour = 7;
-                    const minute = 30 + Math.floor(Math.random() * 45);
-                    const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                    
-                    // Random delay between 5 and 45 minutes
-                    const duration = 5 + Math.floor(Math.random() * 40);
-                    
-                    // Random reason for being late
-                    const reasons = [
-                        'Transportasi umum terlambat',
-                        'Bangun kesiangan',
-                        'Kemacetan lalu lintas',
-                        'Urusan keluarga',
-                        'Hujan lebat',
-                        'Mengantar saudara ke sekolah',
-                        'Sakit ringan'
-                    ];
-                    const reason = reasons[Math.floor(Math.random() * reasons.length)];
-                    
-                    mockLateRecords.push({
-                        id: 'mock-' + Math.random().toString(36).substring(2, 9),
-                        studentId: 'mock-student-' + studentIndex,
-                        studentName: mockStudent.name,
-                        studentClass: mockStudent.class,
-                        date: dateStr,
-                        time: time,
-                        duration: duration,
-                        reason: reason,
-                        recordedBy: currentUser.id,
-                        timestamp: date
-                    });
-                }
-            });
-        }
-        
-        // Render the mock data
-        renderLateStudentsTable(mockLateRecords);
-        console.log('Using mock data for late records table due to API issues');
-    } catch (error) {
-        console.error('Error creating mock late records:', error);
-    }
-}
-
 // Render the late students table
 function renderLateStudentsTable(records) {
     const tableBody = document.getElementById('late-students-table');
@@ -1198,106 +934,51 @@ async function populateStudentSelect(selectedStudentId = null) {
 
 // Save late record
 async function saveLateRecord() {
-    // Get form values
-    const recordId = document.getElementById('late-record-id').value;
     const studentId = document.getElementById('late-student-select').value;
     const date = document.getElementById('late-date').value;
     const time = document.getElementById('late-time').value;
     const duration = document.getElementById('late-duration').value;
     const reason = document.getElementById('late-reason').value;
     
-    // Validate required fields
-    if (!studentId) {
-        alert('Pilih siswa');
-        return;
-    }
-    
-    if (!date) {
-        alert('Masukkan tanggal');
-        return;
-    }
-    
-    if (!time) {
-        alert('Masukkan jam masuk');
-        return;
-    }
-    
-    if (!duration) {
-        alert('Masukkan durasi keterlambatan');
+    if (!studentId || !date || !time || !duration || !reason) {
+        alert('Semua field harus diisi');
         return;
     }
     
     try {
         showLoading();
         
-        // Find student info
-        let studentName = '';
-        let studentClass = '';
+        const result = await callAPI('saveLateRecord', {
+            studentId,
+            date,
+            time,
+            duration,
+            reason
+        });
         
-        if (studentId.startsWith('mock-student-')) {
-            // For mock students
-            const mockNames = [
-                { name: 'Budi Santoso', class: 'X-A' },
-                { name: 'Siti Nuraini', class: 'XI-B' },
-                { name: 'Ahmad Hidayat', class: 'XII-C' },
-                { name: 'Dewi Safitri', class: 'XI-A' },
-                { name: 'Rudi Hermawan', class: 'X-C' }
-            ];
-            const index = parseInt(studentId.replace('mock-student-', ''));
-            if (index >= 0 && index < mockNames.length) {
-                studentName = mockNames[index].name;
-                studentClass = mockNames[index].class;
+        if (result.success) {
+            // Reload data
+            await loadLateStudents();
+            await loadAllLateRecords();
+            
+            // Update dashboard
+            if (document.getElementById('late-students')) {
+                document.getElementById('late-students').textContent = lateStudents.length;
             }
+            renderLateStudentsList();
+            
+            // Reload statistics
+            await loadLateStatistics();
+            
+            // Close modal
+            closeModal('late-student-modal');
+            
+            alert(result.message);
         } else {
-            // For real students
-            const student = allStudents.find(s => s.id === studentId);
-            if (student) {
-                studentName = student.name;
-                studentClass = student.class || '-';
-            }
+            alert('Error: ' + result.message);
         }
-        
-        // Create a mock record
-        const mockRecord = {
-            id: recordId || 'mock-' + Math.random().toString(36).substring(2, 9),
-            studentId: studentId,
-            studentName: studentName,
-            studentClass: studentClass,
-            date: date,
-            time: time,
-            duration: duration,
-            reason: reason,
-            recordedBy: currentUser.id,
-            timestamp: new Date()
-        };
-        
-        // Simulate successful API response
-        const result = {
-            success: true,
-            message: recordId ? "Data keterlambatan berhasil diperbarui (demo)" : "Keterlambatan siswa berhasil dicatat (demo)",
-            lateRecord: mockRecord
-        };
-        
-        // Close modal
-        closeModal('late-student-modal');
-        
-        // For demonstration, just reload everything with fresh mock data
-        await loadLateStudents();
-        await loadAllLateRecords();
-        
-        // Update dashboard
-        if (document.getElementById('late-students')) {
-            document.getElementById('late-students').textContent = lateStudents.length;
-        }
-        renderLateStudentsList();
-        
-        // Reload statistics
-        await loadLateStatistics();
-        
-        alert(result.message);
-        
     } catch (error) {
-        console.error('Error in mock save late record:', error);
+        console.error('Error saving late record:', error);
         alert('Error: ' + error.message);
     } finally {
         hideLoading();
@@ -1321,7 +1002,9 @@ async function deleteLateRecord(id) {
             await loadAllLateRecords();
             
             // Update dashboard
-            document.getElementById('late-students').textContent = lateStudents.length;
+            if (document.getElementById('late-students')) {
+                document.getElementById('late-students').textContent = lateStudents.length;
+            }
             renderLateStudentsList();
             
             // Reload statistics
@@ -1333,43 +1016,6 @@ async function deleteLateRecord(id) {
         }
     } catch (error) {
         console.error('Error deleting late record:', error);
-        alert('Error: ' + error.message);
-    } finally {
-        hideLoading();
-    }
-}
-
-// Temporarily use mock data for deleting late records
-async function deleteLateRecord(id) {
-    if (!confirm('Apakah Anda yakin ingin menghapus catatan keterlambatan ini?')) {
-        return;
-    }
-    
-    try {
-        showLoading();
-        
-        // Simulate successful API response
-        const result = {
-            success: true,
-            message: "Catatan keterlambatan berhasil dihapus (demo)"
-        };
-        
-        // Reload data with fresh mock data
-        await loadLateStudents();
-        await loadAllLateRecords();
-        
-        // Update dashboard
-        if (document.getElementById('late-students')) {
-            document.getElementById('late-students').textContent = lateStudents.length;
-        }
-        renderLateStudentsList();
-        
-        // Reload statistics
-        await loadLateStatistics();
-        
-        alert(result.message);
-    } catch (error) {
-        console.error('Error in mock delete late record:', error);
         alert('Error: ' + error.message);
     } finally {
         hideLoading();
